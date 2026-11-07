@@ -18,7 +18,7 @@ $env:DATABASE_URL="postgresql://usuario:senha@servidor:5432/banco?sslmode=requir
 py -m telemetria.agent
 ```
 
-**Não salve DATABASE_URL no GitHub, scripts versionados ou capturas de tela.** Prefira segredo gerenciado no Windows. O SQLite é a fila local durável. O agente lê novas linhas do CSV e envia em lotes; quando a internet falha, guarda pendências e reenvia depois. Só marca como enviado após confirmação do commit remoto. Eventos enviados são retidos localmente por 7 dias (configurável).
+**Não salve DATABASE_URL no GitHub, scripts versionados ou capturas de tela.** Prefira segredo gerenciado no Windows. O SQLite é a fila local durável. O agente lê novas linhas do CSV e envia em lotes; quando a internet falha, guarda pendências e reenvia depois. Só marca como enviado após confirmação do commit remoto. Todos os eventos são retidos por no máximo 30 dias a partir da aquisição, inclusive os pendentes. Após 30 dias sem internet, leituras não transmitidas serão descartadas com registro de erro. O arquivo SQLite pode continuar ocupando espaço até compactação (VACUUM); a exclusão limita a retenção lógica, não o tamanho físico exato.
 
 ## 3. Streamlit
 Defina `DATABASE_URL` e `TELEMETRIA_STATION_ID="betim"` nos Secrets do aplicativo Streamlit, com credenciais **somente leitura**. O app consulta os últimos registros do PostgreSQL; não conecta ao CLP.
@@ -28,3 +28,6 @@ Defina `DATABASE_URL` e `TELEMETRIA_STATION_ID="betim"` nos Secrets do aplicativ
 - O tamanho da fila cresce quando a internet cai: monitore espaço em disco.
 - A transmissão usa HTTPS/TLS PostgreSQL, não Node-RED nesta etapa.
 - Não publique credenciais, IPs industriais ou arquivos de dados reais.
+
+## Retenção automática PostgreSQL (30 dias)
+Execute `telemetria/retencao_postgres_30dias.sql` no SQL Editor após criar a tabela. O script requer a extensão `pg_cron` habilitada no provedor e agenda uma exclusão diária. Verifique se o job foi criado. Se `pg_cron` não estiver disponível, configure uma tarefa agendada externa equivalente. A exclusão diária pode deixar registros por até aproximadamente 31 dias entre execuções; para limite estrito de 30 dias, filtre também consultas com `captured_at >= NOW() - INTERVAL '30 days'`.

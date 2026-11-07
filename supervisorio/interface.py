@@ -24,10 +24,13 @@ def filtros_laterais():
         # As duas marcas ficam acima do título e não aparecem na área principal.
         nacional = ASSETS / "logo_nacional.png"
         vlatec = ASSETS / "logo_vlatecn.png"
-        if nacional.is_file():
-            st.image(str(nacional), width=235)
-        if vlatec.is_file():
-            st.image(str(vlatec), width=195)
+        col_nacional, col_vlatec = st.columns([1, 1], gap="small", vertical_alignment="center")
+        with col_nacional:
+            if nacional.is_file():
+                st.image(str(nacional), use_container_width=True)
+        with col_vlatec:
+            if vlatec.is_file():
+                st.image(str(vlatec), use_container_width=True)
         st.title("Motores")
         pesquisa = st.text_input("Filtrar motor", placeholder="Ex.: M07")
         encontrados = [m for m in MOTORES if pesquisa.strip().upper() in m]

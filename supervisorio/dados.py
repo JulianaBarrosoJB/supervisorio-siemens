@@ -42,14 +42,20 @@ def dados_motor(df, motor):
         return pd.DataFrame(columns=["timestamp", "corrente", "velocidade"]), False
     return serie_demo(motor).tail(120), True
 
+def segredo(nome, default=""):
+    try:
+        return st.secrets.get(nome, os.getenv(nome, default))
+    except (FileNotFoundError, RuntimeError):
+        return os.getenv(nome, default)
+
 @st.cache_data(ttl=1, show_spinner=False)
 def carregar_postgres():
     """Consulta últimos snapshots; credenciais apenas nos Secrets do Streamlit."""
     import psycopg
     import json
     from datetime import timezone
-    url = st.secrets.get("DATABASE_URL", os.getenv("DATABASE_URL", ""))
-    station = st.secrets.get("TELEMETRIA_STATION_ID", "betim")
+    url = segredo("DATABASE_URL")
+    station = segredo("TELEMETRIA_STATION_ID", "betim")
     if not url:
         return None
     with psycopg.connect(url, connect_timeout=5) as pg:

@@ -38,4 +38,42 @@ def dados_motor(df, motor):
         dados = dados.dropna().tail(120)
         if not dados.empty:
             return dados, False
+    if df is not None:
+        return pd.DataFrame(columns=["timestamp", "corrente", "velocidade"]), False
     return serie_demo(motor).tail(120), True
+
+@st.cache_data(ttl=1, show_spinner=False)
+def carregar_postgres():
+    """Consulta últimos snapshots; credenciais apenas nos Secrets do Streamlit."""
+    import psycopg
+    import json
+    from datetime import timezone
+    url = st.secrets.get("DATABASE_URL", os.getenv("DATABASE_URL", ""))
+    station = st.secrets.get("TELEMETRIA_STATION_ID", "betim")
+    if not url:
+        return None
+    with psycopg.connect(url, connect_timeout=5) as pg:
+        with pg.cursor() as cur:
+            cur.execute("""SELECT captured_at, measurements FROM motor_snapshots
+                           WHERE station_id=%s ORDER BY captured_at DESC LIMIT 120""", (station,))
+            rows = cur.fetchall()
+    if not rows:
+        return pd.DataFrame(columns=["timestamp"])
+    out = []
+    for ts, payload in reversed(rows):
+        record = {"timestamp": ts.astimezone(timezone.utc)}
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+        for motor, metrics in payload.items():
+            for field in ("corrente", "velocidade"):
+                if field in metrics:
+                    record[f"{motor}_{field}"] = metrics[field]
+        out.append(record)
+    return pd.DataFrame(out)
+
+def carregar_dados():
+    """Prioriza banco externo configurado; sem fallback fictício em caso de falha."""
+    if st.secrets.get("DATABASE_URL", os.getenv("DATABASE_URL", "")):
+        return carregar_postgres(), "PostgreSQL"
+    df = carregar_csv()
+    return df, "CSV local" if df is not None else "Demonstração"

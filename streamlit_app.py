@@ -47,6 +47,13 @@ with st.sidebar:
     escolhidos = st.multiselect("Selecionar motores", encontrados, default=padrao)
     st.caption(f"{len(escolhidos)} motor(es) selecionado(s)")
 
+logo_a, logo_b = st.columns([3, 2], vertical_alignment="center")
+with logo_a:
+    if os.path.isfile("assets/logo_nacional.png"):
+        st.image("assets/logo_nacional.png", width=285)
+with logo_b:
+    if os.path.isfile("assets/logo_vlatecn.png"):
+        st.image("assets/logo_vlatecn.png", width=215)
 st.title("Gráficos dos motores")
 
 @st.fragment(run_every="2s")
@@ -72,7 +79,13 @@ def exibir():
                     dados = dados.dropna().tail(120)
                 else:
                     dados = serie_demo(motor).tail(120)
-                st.markdown(f"**{motor} — Corrente (A)**")
+                st.markdown(f"### {motor}")
+                velocidade = float(dados["velocidade"].iloc[-1]) if not dados.empty else float("nan")
+                corrente = float(dados["corrente"].iloc[-1]) if not dados.empty else float("nan")
+                card_vel, card_status, card_corr = st.columns(3)
+                card_vel.metric("Velocidade", f"{velocidade:.1f} %" if np.isfinite(velocidade) else "—")
+                card_status.metric("Status", "Não mapeado")
+                card_corr.metric("Corrente", f"{corrente:.2f} A" if np.isfinite(corrente) else "—")
                 fig = go.Figure(go.Scatter(
                     x=dados["timestamp"], y=dados["corrente"], mode="lines",
                     line=dict(color="#2878b8", width=2),

@@ -139,8 +139,9 @@ def sync(db):
 
 
 def cleanup(db):
-    db.execute("""DELETE FROM events WHERE sent_at IS NOT NULL
-                  AND sent_at < datetime('now', ?)""", (f"-{RETENTION_DAYS} days",))
+    from datetime import timedelta
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)).isoformat()
+    db.execute("DELETE FROM events WHERE sent_at IS NOT NULL AND sent_at < ?", (cutoff,))
     db.commit()
 
 
@@ -151,21 +152,35 @@ def main():
         init_local(db)
         last_cleanup = 0
         failures = 0
+        next_sync = 0.0
         while True:
+            # A coleta local continua a cada segundo, mesmo se a nuvem estiver indisponível.
             try:
                 n = ingest(db)
-                sent = sync(db)
-                if n or sent:
-                    pending = db.execute("SELECT COUNT(*) FROM events WHERE sent_at IS NULL").fetchone()[0]
-                    LOG.info("Novos=%s enviados=%s pendentes=%s", n, sent, pending)
-                failures = 0
-            except (psycopg.Error, OSError, sqlite3.Error, ValueError) as exc:
-                failures += 1
-                LOG.warning("Coleta/sincronização: %s (tentativa %s)", exc, failures)
+                if n:
+                    LOG.info("Gravados localmente: %s", n)
+            except (OSError, sqlite3.Error, ValueError) as exc:
+                LOG.error("Erro ao persistir CSV local: %s", exc)
+            if time.monotonic() >= next_sync:
+                try:
+                    sent = sync(db)
+                    if sent:
+                        pending = db.execute("SELECT COUNT(*) FROM events WHERE sent_at IS NULL").fetchone()[0]
+                        LOG.info("Enviados: %s; pendentes: %s", sent, pending)
+                    failures = 0
+                    next_sync = time.monotonic() + INTERVAL
+                except (psycopg.Error, OSError, sqlite3.Error) as exc:
+                    failures += 1
+                    delay = min(60.0, INTERVAL * 2 ** min(failures, 6))
+                    next_sync = time.monotonic() + delay
+                    LOG.warning("PostgreSQL indisponível; nova tentativa em %.0fs: %s", delay, exc)
             if time.monotonic() - last_cleanup > 3600:
-                cleanup(db)
+                try:
+                    cleanup(db)
+                except sqlite3.Error as exc:
+                    LOG.error("Falha na limpeza: %s", exc)
                 last_cleanup = time.monotonic()
-            time.sleep(min(60, INTERVAL * 2 ** min(failures, 6)) if failures else INTERVAL)
+            time.sleep(INTERVAL)
 
 
 if __name__ == "__main__":

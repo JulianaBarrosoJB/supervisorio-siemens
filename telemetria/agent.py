@@ -24,7 +24,7 @@ STATION = os.getenv("TELEMETRIA_STATION_ID", "betim")
 POSTGRES_URL = os.getenv("DATABASE_URL", "")
 INTERVAL = max(1.0, float(os.getenv("TELEMETRIA_INTERVAL", "1")))
 BATCH = max(1, min(500, int(os.getenv("TELEMETRIA_BATCH", "100"))))
-RETENTION_DAYS = max(1, int(os.getenv("TELEMETRIA_RETENTION_DAYS", "7")))
+RETENTION_DAYS = 30  # Retenção máxima fixa, inclusive para registros pendentes.
 
 
 def init_local(db):
@@ -141,8 +141,18 @@ def sync(db):
 def cleanup(db):
     from datetime import timedelta
     cutoff = (datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)).isoformat()
-    db.execute("DELETE FROM events WHERE sent_at IS NOT NULL AND sent_at < ?", (cutoff,))
+    # Limite por data de aquisição, não por data de envio.
+    # Registros pendentes antigos também expiram: registrar a perda no log.
+    pending = db.execute(
+        "SELECT COUNT(*) FROM events WHERE captured_at < ? AND sent_at IS NULL",
+        (cutoff,)
+    ).fetchone()[0]
+    if pending:
+        LOG.error("RETENÇÃO 30 DIAS: excluindo %s registros não transmitidos; dados perdidos.", pending)
+    removed = db.execute("DELETE FROM events WHERE captured_at < ?", (cutoff,)).rowcount
     db.commit()
+    if removed:
+        LOG.info("Limpeza SQLite: %s registros com mais de 30 dias removidos.", removed)
 
 
 def main():

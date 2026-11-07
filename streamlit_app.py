@@ -10,7 +10,13 @@ st.markdown("""<style>
 .stApp {background-color:#ffffff;color:#202a36}
 [data-testid="stSidebar"] {background-color:#f6f8fb}
 .block-container {padding-top:1.5rem;max-width:1600px}
-h1 {font-size:1.65rem!important;font-weight:650!important}
+h1 {font-size:1.25rem!important;font-weight:600!important}
+h2 {font-size:1.1rem!important}
+h3 {font-size:1rem!important;font-weight:600!important}
+[data-testid="stMetricLabel"] {font-size:.72rem!important}
+[data-testid="stMetricValue"] {font-size:1.15rem!important;line-height:1.3!important}
+[data-testid="stMetric"] {padding:.25rem .4rem!important}
+[data-testid="stSidebar"] h1 {font-size:1.1rem!important}
 [data-testid="stVerticalBlockBorderWrapper"] {background:#fff}
 </style>""", unsafe_allow_html=True)
 

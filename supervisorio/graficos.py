@@ -7,6 +7,9 @@ from .dados import dados_motor
 def mostrar_motor(motor, df):
     dados, demo = dados_motor(df, motor)
     st.markdown(f"### {motor}")
+    if dados.empty:
+        st.info("Sem leituras disponíveis para este motor.")
+        return demo
     velocidade = float(dados["velocidade"].iloc[-1]) if not dados.empty else float("nan")
     corrente = float(dados["corrente"].iloc[-1]) if not dados.empty else float("nan")
     card_vel, card_status, card_corr = st.columns(3)

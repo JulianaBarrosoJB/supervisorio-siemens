@@ -4,3 +4,10 @@ primaryColor = "#2878b8"
 backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#f6f8fb"
 textColor = "#202a36"
+
+[client]
+# Reduz elementos de desenvolvedor do Streamlit; não substitui a autorização RBAC.
+toolbarMode = "minimal"
+showErrorDetails = "none"
+# Oculta os controles de exportação nativos (não impede inspeção dos dados exibidos).
+disableDataExport = true

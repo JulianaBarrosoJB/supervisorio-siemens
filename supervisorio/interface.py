@@ -17,13 +17,15 @@ def aplicar_estilo():
 .stApp {background-color:#ffffff;color:#243449}
 [data-testid="stSidebar"] {background-color:#f7f9fc;border-right:1px solid #e4eaf1}
 .block-container {padding-top:4.5rem;max-width:1500px}
-.login-brand {background:linear-gradient(90deg,#ed1c24 0%,#ed1c24 80%,#103a72 80%);
-border-radius:12px 12px 0 0;padding:20px 18px;color:white;text-align:center}
+.login-brand {background:#103a72;
+border-radius:12px 12px 0 0;padding:22px 18px;color:white;text-align:center;margin:0 -18px 16px}
 .login-brand .login-title {font-size:1.15rem;font-weight:750;letter-spacing:.04em}
 .login-brand .login-subtitle {font-size:.77rem;opacity:.94;margin-top:5px}
 .st-key-login_panel {background:#fff;border:1px solid #e2e8f0;border-radius:14px;
-box-shadow:0 10px 35px rgba(17,45,83,.08);padding:0 0 18px 0;overflow:hidden}
-.st-key-login_panel [data-testid="stForm"] {margin:12px 22px 0;border:0;padding:0}
+box-shadow:0 10px 35px rgba(17,45,83,.08);padding:0 18px 20px;box-sizing:border-box;width:100%;min-width:0;overflow:hidden}
+.st-key-login_panel [data-testid="stForm"] {margin:0;border:0;padding:0;width:100%;min-width:0;box-sizing:border-box}
+.st-key-login_panel [data-testid="stTextInput"],.st-key-login_panel [data-testid="stFormSubmitButton"] {width:100%;min-width:0}
+.st-key-login_panel input {box-sizing:border-box;width:100%}
 .st-key-login_panel [data-testid="stMarkdownContainer"] p {margin:0}
 .profile-identity {display:flex;align-items:center;gap:10px;min-width:0;padding:8px 0 3px}
 .profile-avatar {height:37px;width:37px;border-radius:50%;background:#103a72;color:#fff;

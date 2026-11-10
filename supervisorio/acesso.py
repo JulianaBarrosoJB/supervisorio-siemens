@@ -141,21 +141,37 @@ def exigir_login():
         # O fragmento de gráficos (1 s) NÃO atualiza esse cronômetro.
         sessao["last_action_at"] = time.time()
         return sessao
-    st.title("Acesso ao supervisório")
-    st.caption("Sistema de Monitoramento de Motores — NG Betim/MG")
-    with st.form("login", clear_on_submit=True):
-        email = st.text_input("E-mail", placeholder="usuario@empresa.com")
-        senha = st.text_input("Senha", type="password")
-        enviado = st.form_submit_button("Entrar", type="primary", width="stretch")
-    if enviado:
-        if not email or not senha:
-            st.warning("Informe e-mail e senha.")
-        else:
-            try:
-                entrar(email, senha)
-                st.rerun()
-            except (AuthError, KeyError):
-                st.error("Não foi possível entrar. Verifique suas credenciais e autorização.")
+    from .interface import _logo_base64
+    col_esquerda, col_centro, col_direita = st.columns([1, 1.15, 1])
+    with col_centro:
+        with st.container(key="login_panel"):
+            nacional = _logo_base64("logo_nacional.png")
+            logo = (
+                f'<img src="data:image/png;base64,{nacional}" '
+                'alt="Nacional Gás" style="max-height:32px;max-width:145px;object-fit:contain;margin-bottom:10px">'
+                if nacional else ""
+            )
+            st.markdown(
+                '<div class="login-brand">'
+                + logo
+                + '<div class="login-title">ACESSO AO SUPERVISÓRIO</div>'
+                + '<div class="login-subtitle">Sistema de Monitoramento de Motores NG Betim/MG</div>'
+                + '</div>',
+                unsafe_allow_html=True,
+            )
+            with st.form("login", clear_on_submit=True):
+                email = st.text_input("E-mail", placeholder="Digite seu e-mail")
+                senha = st.text_input("Senha", type="password", placeholder="Digite sua senha")
+                enviado = st.form_submit_button("Entrar", type="primary", width="stretch")
+            if enviado:
+                if not email or not senha:
+                    st.warning("Informe e-mail e senha.")
+                else:
+                    try:
+                        entrar(email, senha)
+                        st.rerun()
+                    except (AuthError, KeyError):
+                        st.error("Não foi possível entrar. Verifique suas credenciais.")
     st.stop()
 
 

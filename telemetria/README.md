@@ -31,3 +31,9 @@ Defina `DATABASE_URL` e `TELEMETRIA_STATION_ID="betim"` nos Secrets do aplicativ
 
 ## Retenção automática PostgreSQL (30 dias)
 Execute `telemetria/retencao_postgres_30dias.sql` no SQL Editor após criar a tabela. O script requer a extensão `pg_cron` habilitada no provedor e agenda uma exclusão diária. Verifique se o job foi criado. Se `pg_cron` não estiver disponível, configure uma tarefa agendada externa equivalente. A exclusão diária pode deixar registros por até aproximadamente 31 dias entre execuções; para limite estrito de 30 dias, filtre também consultas com `captured_at >= NOW() - INTERVAL '30 days'`.
+
+## Política definida: PostgreSQL diário / SQLite 30 dias
+- PostgreSQL: agendamento `limpeza_motores_diaria` executa `TRUNCATE public.motor_snapshots` às 03:00 UTC (meia-noite Brasília). Execute o SQL versionado em `telemetria/retencao_postgres_30dias.sql` no Supabase; o nome do arquivo é legado, mas o conteúdo agora faz limpeza **diária completa**.
+- SQLite no PC: conserva por até 30 dias desde `captured_at`, independentemente de envio. O limite físico de espaço em disco deve ser validado com o coletor direto antes de implantação.
+- Registros pendentes de dias anteriores ficam no SQLite e não são reenviados para o PostgreSQL no dia seguinte.
+- A implementação versionada neste diretório ainda recebe **CSV** como entrada; o coletor de leitura direta Siemens ainda deve ser consolidado antes de instalar na fábrica.

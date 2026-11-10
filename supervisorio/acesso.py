@@ -131,6 +131,29 @@ def validar_sessao(force=False):
     return sessao
 
 
+
+def atualizar_nome_exibicao(novo_nome):
+    """Altera somente o próprio display_name, após conferir identidade no Auth."""
+    nome = " ".join(novo_nome.strip().split())
+    if len(nome) < 2 or len(nome) > 80 or any(ord(c) < 32 for c in nome):
+        raise AuthError("O nome deve ter entre 2 e 80 caracteres.")
+    sessao = validar_sessao(force=True)
+    if not sessao:
+        raise AuthError("Sessão expirada. Entre novamente.")
+    usuario = api("GET", "/auth/v1/user", token=sessao["access_token"])
+    if usuario.get("id") != sessao["user_id"]:
+        raise AuthError("Não foi possível confirmar sua identidade.")
+    if not config("SUPABASE_SERVICE_ROLE_KEY"):
+        raise AuthError("Edição de perfil indisponível no momento.")
+    # A chave privilegiada permanece exclusivamente no backend do Streamlit.
+    # O filtro por UUID vem da identidade validada no Supabase, nunca da entrada do usuário.
+    api("PATCH", "/rest/v1/app_profiles",
+        params={"id": "eq." + sessao["user_id"]},
+        data={"display_name": nome}, admin=True)
+    sessao["profile"] = perfil(sessao["access_token"], sessao["user_id"])
+    sessao["verified_at"] = time.time()
+    return nome
+
 def exigir_login():
     if not config("SUPABASE_URL") or not config("SUPABASE_ANON_KEY"):
         st.warning("Acesso temporariamente indisponível. Entre em contato com o administrador.")

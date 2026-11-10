@@ -2,13 +2,13 @@
 from datetime import datetime, timezone
 import streamlit as st
 from supervisorio.dados import carregar_dados
-from supervisorio.interface import aplicar_estilo, filtros_laterais
+from supervisorio.interface import aplicar_estilo, filtros_laterais, mostrar_cabecalho
 from supervisorio.graficos import mostrar_motor
 
 st.set_page_config(page_title="Gráficos dos motores", layout="wide", initial_sidebar_state="expanded")
 aplicar_estilo()
 escolhidos = filtros_laterais()
-st.title("Gráficos dos motores")
+mostrar_cabecalho()
 
 @st.fragment(run_every="1s")
 def exibir():

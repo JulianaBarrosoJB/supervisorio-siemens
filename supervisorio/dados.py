@@ -48,28 +48,40 @@ def segredo(nome, default=""):
     except (FileNotFoundError, RuntimeError):
         return os.getenv(nome, default)
 
-@st.cache_data(ttl=1, show_spinner=False)
-def carregar_postgres():
-    """Consulta últimos snapshots; credenciais apenas nos Secrets do Streamlit."""
-    import psycopg
-    import json
+@st.cache_data(ttl=2, show_spinner=False)
+def carregar_postgres(access_token):
+    """Leitura via Data API e JWT do usuário. RLS aplicada pelo PostgreSQL."""
+    import requests
     from datetime import timezone
-    url = segredo("DATABASE_URL")
+
+    url = segredo("SUPABASE_URL").rstrip("/")
+    chave = segredo("SUPABASE_ANON_KEY")
     station = segredo("TELEMETRIA_STATION_ID", "betim")
-    if not url:
-        return None
-    with psycopg.connect(url, connect_timeout=5) as pg:
-        with pg.cursor() as cur:
-            cur.execute("""SELECT captured_at, measurements FROM motor_snapshots
-                           WHERE station_id=%s ORDER BY captured_at DESC LIMIT 120""", (station,))
-            rows = cur.fetchall()
+    if not url or not chave or not access_token:
+        raise RuntimeError("Autenticação do Supabase não configurada.")
+    try:
+        response = requests.get(
+            url + "/rest/v1/motor_snapshots",
+            headers={"apikey": chave, "Authorization": "Bearer " + access_token},
+            params={
+                "select": "captured_at,measurements",
+                "station_id": "eq." + station,
+                "order": "captured_at.desc",
+                "limit": "120",
+            },
+            timeout=12,
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        raise RuntimeError("Consulta protegida ao PostgreSQL falhou.") from exc
+
+    rows = response.json()
     if not rows:
         return pd.DataFrame(columns=["timestamp"])
     out = []
-    for ts, payload in reversed(rows):
-        record = {"timestamp": ts.astimezone(timezone.utc)}
-        if isinstance(payload, str):
-            payload = json.loads(payload)
+    for item in reversed(rows):
+        record = {"timestamp": pd.to_datetime(item["captured_at"], utc=True)}
+        payload = item["measurements"]
         for motor, metrics in payload.items():
             for field in ("corrente", "velocidade"):
                 if field in metrics:
@@ -77,9 +89,7 @@ def carregar_postgres():
         out.append(record)
     return pd.DataFrame(out)
 
-def carregar_dados():
-    """Prioriza banco externo configurado; sem fallback fictício em caso de falha."""
-    if segredo("DATABASE_URL"):
-        return carregar_postgres(), "PostgreSQL"
-    df = carregar_csv()
-    return df, "CSV local" if df is not None else "Demonstração"
+
+def carregar_dados(access_token):
+    """A consulta exige login; jamais retornar dados locais ou fictícios ao visitante."""
+    return carregar_postgres(access_token), "PostgreSQL"

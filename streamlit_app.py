@@ -7,7 +7,7 @@ import streamlit as st
 from supervisorio.acesso import exigir_login, validar_sessao, sair, autorizado
 from supervisorio.administracao import exibir_administracao
 from supervisorio.dados import carregar_dados
-from supervisorio.interface import aplicar_estilo, filtros_laterais, mostrar_cabecalho
+from supervisorio.interface import aplicar_estilo, filtros_laterais, mostrar_cabecalho, mostrar_perfil
 from supervisorio.graficos import mostrar_motor
 
 st.set_page_config(
@@ -20,15 +20,26 @@ sessao = exigir_login()
 perfil = sessao["profile"]
 
 with st.sidebar:
-    st.caption(f"Acesso: {perfil['display_name'] or perfil['email']}")
-    st.caption(f"Perfil: {perfil['role_key'].capitalize()}")
-    paginas = ["Monitoramento"]
-    if autorizado(sessao, "users.manage"):
-        paginas.append("Administração")
-    pagina = st.radio("Área", paginas, label_visibility="collapsed")
-    if st.button("Sair da conta", width="stretch"):
-        sair()
-        st.rerun()
+    mostrar_perfil(perfil)
+    with st.popover("Minha conta ▾", width="stretch"):
+        st.caption(perfil.get("email", ""))
+        if st.button("Monitoramento", width="stretch", key="menu_monitoramento"):
+            st.session_state["pagina_atual"] = "Monitoramento"
+            st.rerun()
+        if autorizado(sessao, "users.manage"):
+            if st.button("Administração", width="stretch", key="menu_admin"):
+                st.session_state["pagina_atual"] = "Administração"
+                st.rerun()
+        st.divider()
+        if st.button("Sair da conta", width="stretch", key="menu_sair"):
+            sair()
+            st.session_state.pop("pagina_atual", None)
+            st.rerun()
+
+pagina = st.session_state.get("pagina_atual", "Monitoramento")
+if pagina == "Administração" and not autorizado(sessao, "users.manage"):
+    pagina = "Monitoramento"
+    st.session_state["pagina_atual"] = pagina
 
 if pagina == "Administração":
     exibir_administracao()

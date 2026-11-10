@@ -32,7 +32,9 @@ def api(method, path, token=None, data=None, params=None, admin=False):
     headers = {"apikey": key, "Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    elif admin:
+    elif admin and not key.startswith("sb_secret_"):
+        # Chaves novas sb_secret_ vão apenas no cabeçalho apikey;
+        # chaves legacy service_role são JWTs e podem ser Bearer.
         headers["Authorization"] = f"Bearer {key}"
     try:
         response = requests.request(

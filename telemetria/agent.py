@@ -119,8 +119,15 @@ def ingest(db):
 def sync(db):
     if not POSTGRES_URL:
         return 0
+    from zoneinfo import ZoneInfo
+    # O PostgreSQL guarda somente o dia atual em Brasilia.
+    # Pendencias de dias anteriores continuam no SQLite por ate 30 dias,
+    # mas nao sao reenviadas para a nuvem apos a virada.
+    hoje = datetime.now(ZoneInfo("America/Sao_Paulo"))
+    inicio_dia_utc = hoje.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc).isoformat()
     rows = db.execute("""SELECT event_id, station_id, captured_at, measurements
-                         FROM events WHERE sent_at IS NULL ORDER BY rowid LIMIT ?""", (BATCH,)).fetchall()
+                         FROM events WHERE sent_at IS NULL AND captured_at >= ?
+                         ORDER BY rowid LIMIT ?""", (inicio_dia_utc, BATCH)).fetchall()
     if not rows:
         return 0
     # Confirmação somente após commit remoto; em caso de falha os eventos permanecem pendentes.

@@ -25,8 +25,8 @@ def serie_demo(motor):
     x = np.arange(180)
     return pd.DataFrame({
         "timestamp": t,
-        "corrente": np.maximum(0, 6 + numero * .045 + 1.2 * np.sin(x / 14 + numero)),
-        "velocidade": np.clip(76 + 10 * np.sin(x / 25 + numero / 9), 0, 100),
+        "corrente": np.maximum(0, 3.6 + numero * .045 + .05 * np.sin(x / 16 + numero * .21)),
+        "velocidade": np.clip(72 + (numero % 13) * .55 + .12 * np.sin(x / 15 + numero * .3), 0, 100),
     })
 
 def dados_motor(df, motor):
@@ -79,7 +79,7 @@ def carregar_postgres():
 
 def carregar_dados():
     """Prioriza banco externo configurado; sem fallback fictício em caso de falha."""
-    if st.secrets.get("DATABASE_URL", os.getenv("DATABASE_URL", "")):
+    if segredo("DATABASE_URL"):
         return carregar_postgres(), "PostgreSQL"
     df = carregar_csv()
     return df, "CSV local" if df is not None else "Demonstração"

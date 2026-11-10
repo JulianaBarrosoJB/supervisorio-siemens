@@ -142,7 +142,7 @@ def exigir_login():
         sessao["last_action_at"] = time.time()
         return sessao
     from .interface import _logo_base64
-    col_esquerda, col_centro, col_direita = st.columns([1, 1.15, 1])
+    col_esquerda, col_centro, col_direita = st.columns([1, 2, 1], gap="small")
     with col_centro:
         with st.container(key="login_panel"):
             nacional = _logo_base64("logo_nacional.png")

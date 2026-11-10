@@ -14,8 +14,8 @@ def mostrar_motor(motor, df):
     corrente = float(dados["corrente"].iloc[-1]) if not dados.empty else float("nan")
     card_vel, card_status, card_corr = st.columns([1, 1.3, 1], gap="small")
     card_vel.metric("Velocidade", f"{velocidade:.1f} %" if np.isfinite(velocidade) else "—")
-    # Ainda não há endereço mapeado para status ligado/desligado.
-    card_status.metric("Status", "Não mapeado")
+    # Valor ilustrativo para testes: o sinal de estado real ainda não foi mapeado.
+    card_status.metric("Status (teste)", "ON", help="ON é um indicador demonstrativo, não confirma que o motor esteja ligado.")
     card_corr.metric("Corrente", f"{corrente:.2f} A" if np.isfinite(corrente) else "—")
     fig = go.Figure(go.Scatter(
         x=dados["timestamp"], y=dados["corrente"], mode="lines",

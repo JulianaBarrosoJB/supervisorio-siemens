@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 import streamlit as st
 
-from supervisorio.acesso import exigir_login, validar_sessao, sair, autorizado
+from supervisorio.acesso import exigir_login, validar_sessao, sair, autorizado, atualizar_nome_exibicao, AuthError
 from supervisorio.administracao import exibir_administracao
 from supervisorio.dados import carregar_dados
 from supervisorio.interface import aplicar_estilo, filtros_laterais, mostrar_cabecalho, mostrar_perfil
@@ -23,6 +23,21 @@ with st.sidebar:
     mostrar_perfil(perfil)
     with st.popover("Minha conta ▾", width="stretch"):
         st.caption(perfil.get("email", ""))
+        with st.expander("Editar meu nome"):
+            with st.form("editar_meu_nome"):
+                nome_exibicao = st.text_input(
+                    "Nome de exibição",
+                    value=perfil.get("display_name") or "",
+                    max_chars=80,
+                    placeholder="Como deseja aparecer no supervisório",
+                )
+                salvar_nome = st.form_submit_button("Salvar nome", width="stretch")
+            if salvar_nome:
+                try:
+                    atualizar_nome_exibicao(nome_exibicao)
+                    st.rerun()
+                except AuthError as exc:
+                    st.error(str(exc))
         if st.button("Monitoramento", width="stretch", key="menu_monitoramento"):
             st.session_state["pagina_atual"] = "Monitoramento"
             st.rerun()

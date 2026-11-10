@@ -133,7 +133,7 @@ def validar_sessao(force=False):
 
 def exigir_login():
     if not config("SUPABASE_URL") or not config("SUPABASE_ANON_KEY"):
-        st.error("Acesso bloqueado: configure SUPABASE_URL e SUPABASE_ANON_KEY nos Secrets.")
+        st.warning("Acesso temporariamente indisponível. Entre em contato com o administrador.")
         st.stop()
     sessao = validar_sessao()
     if sessao:
@@ -146,7 +146,7 @@ def exigir_login():
     with st.form("login", clear_on_submit=True):
         email = st.text_input("E-mail", placeholder="usuario@empresa.com")
         senha = st.text_input("Senha", type="password")
-        enviado = st.form_submit_button("Entrar", type="primary", use_container_width=True)
+        enviado = st.form_submit_button("Entrar", type="primary", width="stretch")
     if enviado:
         if not email or not senha:
             st.warning("Informe e-mail e senha.")

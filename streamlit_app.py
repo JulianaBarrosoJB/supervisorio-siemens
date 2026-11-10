@@ -20,7 +20,6 @@ def exibir():
     except Exception as exc:
         st.error(f"Falha ao consultar a fonte de dados: {type(exc).__name__}. Verifique a conexão e os Secrets.")
         return
-    st.caption(f"Fonte: {fonte}")
     if fonte != "Demonstração":
         if df is None or df.empty:
             st.warning("Nenhuma leitura recebida do banco de dados.")

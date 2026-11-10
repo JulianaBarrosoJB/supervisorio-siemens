@@ -15,7 +15,7 @@ def aplicar_estilo():
     st.markdown("""<style>
 .stApp {background-color:#ffffff;color:#243449}
 [data-testid="stSidebar"] {background-color:#f7f9fc;border-right:1px solid #e4eaf1}
-.block-container {padding-top:.75rem;max-width:1500px}
+.block-container {padding-top:4.5rem;max-width:1500px}
 h1 {font-size:1.25rem!important;font-weight:600!important}
 h2 {font-size:1.1rem!important}
 h3 {font-size:1rem!important;font-weight:650!important;color:#173b67!important}

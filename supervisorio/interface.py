@@ -2,6 +2,7 @@
 import base64
 from io import BytesIO
 from pathlib import Path
+from html import escape
 
 import streamlit as st
 from PIL import Image
@@ -16,6 +17,20 @@ def aplicar_estilo():
 .stApp {background-color:#ffffff;color:#243449}
 [data-testid="stSidebar"] {background-color:#f7f9fc;border-right:1px solid #e4eaf1}
 .block-container {padding-top:4.5rem;max-width:1500px}
+.login-brand {background:linear-gradient(90deg,#ed1c24 0%,#ed1c24 80%,#103a72 80%);
+border-radius:12px 12px 0 0;padding:20px 18px;color:white;text-align:center}
+.login-brand .login-title {font-size:1.15rem;font-weight:750;letter-spacing:.04em}
+.login-brand .login-subtitle {font-size:.77rem;opacity:.94;margin-top:5px}
+.st-key-login_panel {background:#fff;border:1px solid #e2e8f0;border-radius:14px;
+box-shadow:0 10px 35px rgba(17,45,83,.08);padding:0 0 18px 0;overflow:hidden}
+.st-key-login_panel [data-testid="stForm"] {margin:12px 22px 0;border:0;padding:0}
+.st-key-login_panel [data-testid="stMarkdownContainer"] p {margin:0}
+.profile-identity {display:flex;align-items:center;gap:10px;min-width:0;padding:8px 0 3px}
+.profile-avatar {height:37px;width:37px;border-radius:50%;background:#103a72;color:#fff;
+display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0}
+.profile-name {font-weight:650;font-size:.86rem;color:#243449;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-role {font-size:.72rem;color:#66778a}
+
 h1 {font-size:1.25rem!important;font-weight:600!important}
 h2 {font-size:1.1rem!important}
 h3 {font-size:1rem!important;font-weight:650!important;color:#173b67!important}
@@ -69,6 +84,27 @@ def mostrar_cabecalho():
         f'<div class="header-ng-logos">{logos}</div>'
         '<div class="header-ng-title">SISTEMA DE MONITORAMENTO DE MOTORES - NG BETIM/MG</div>'
         '</div><div class="header-ng-blue"></div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def iniciais_usuario(perfil):
+    nome = perfil.get("display_name") or perfil.get("email", "").split("@")[0]
+    partes = [p for p in nome.replace(".", " ").replace("_", " ").split() if p]
+    return (partes[0][0] + partes[-1][0]).upper() if len(partes) > 1 else (nome[:2].upper() or "NG")
+
+
+def mostrar_perfil(perfil):
+    """Cartão compacto com avatar; navegação fica no menu suspenso."""
+    nome = perfil.get("display_name") or perfil.get("email", "Usuário").split("@")[0].replace(".", " ").title()
+    nivel = perfil.get("role_key", "visualizador").capitalize()
+    st.markdown(
+        '<div class="profile-identity">'
+        f'<div class="profile-avatar">{escape(iniciais_usuario(perfil))}</div>'
+        '<div style="min-width:0">'
+        f'<div class="profile-name">{escape(nome)}</div>'
+        f'<div class="profile-role">{escape(nivel)}</div>'
+        '</div></div>',
         unsafe_allow_html=True,
     )
 

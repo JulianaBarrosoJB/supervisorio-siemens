@@ -1,25 +1,26 @@
--- Executar uma vez no SQL Editor do Supabase/PostgreSQL.
--- Requer a extensão pg_cron disponível e habilitada no projeto.
+-- PostgreSQL/Supabase: manter somente os dados do dia atual.
+-- Executar no SQL Editor do projeto, uma vez.
+-- A limpeza ocorre a cada dia as 03:00 UTC = 00:00 America/Sao_Paulo.
+-- PostgreSQL e cache de visualizacao nao sao backup. O historico de 30 dias fica no SQLite local.
+
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
--- Recria o job com nome estável (sem acumular agendamentos).
 DO $$
-DECLARE existing_job bigint;
+DECLARE tarefa RECORD;
 BEGIN
-  SELECT jobid INTO existing_job FROM cron.job WHERE jobname = 'limpeza_motor_snapshots_30d';
-  IF existing_job IS NOT NULL THEN
-    PERFORM cron.unschedule(existing_job);
-  END IF;
+  FOR tarefa IN
+    SELECT jobid FROM cron.job
+    WHERE jobname IN ('limpeza_motores_30dias', 'limpeza_motor_snapshots_30d', 'limpeza_motores_diaria')
+  LOOP
+    PERFORM cron.unschedule(tarefa.jobid);
+  END LOOP;
 END $$;
 
--- Executa diariamente às 03:00 UTC. Mantém apenas os últimos 30 dias.
 SELECT cron.schedule(
-  'limpeza_motor_snapshots_30d',
+  'limpeza_motores_diaria',
   '0 3 * * *',
-  $$DELETE FROM public.motor_snapshots
-    WHERE captured_at < NOW() - INTERVAL '30 days'$$
+  $$TRUNCATE TABLE public.motor_snapshots;$$
 );
 
--- Consulta para verificar a rotina:
--- SELECT jobid, jobname, schedule, command FROM cron.job
--- WHERE jobname = 'limpeza_motor_snapshots_30d';
+-- Confirmacao:
+-- SELECT jobid, jobname, schedule, active FROM cron.job WHERE jobname = 'limpeza_motores_diaria';

@@ -15,7 +15,7 @@ def mostrar_motor(motor, df):
     card_vel, card_status, card_corr = st.columns([1, 1.3, 1], gap="small")
     card_vel.metric("Velocidade", f"{velocidade:.1f} %" if np.isfinite(velocidade) else "—")
     # Valor ilustrativo para testes: o sinal de estado real ainda não foi mapeado.
-    card_status.metric("Status (teste)", "ON", help="ON é um indicador demonstrativo, não confirma que o motor esteja ligado.")
+    card_status.metric("Status", "ON", help="Indicador demonstrativo: o estado real do motor ainda não está mapeado.")
     card_corr.metric("Corrente", f"{corrente:.2f} A" if np.isfinite(corrente) else "—")
     fig = go.Figure(go.Scatter(
         x=dados["timestamp"], y=dados["corrente"], mode="lines",

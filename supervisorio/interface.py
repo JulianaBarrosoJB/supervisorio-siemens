@@ -16,7 +16,15 @@ def aplicar_estilo():
     st.markdown("""<style>
 .stApp {background-color:#ffffff;color:#243449}
 [data-testid="stSidebar"] {background-color:#f7f9fc;border-right:1px solid #e4eaf1}
-.block-container {padding-top:4.5rem;max-width:1500px}
+/* Oculta a barra de ferramentas padrão do Streamlit e seus controles. */
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"],
+#MainMenu,
+footer {display:none!important}
+.block-container {padding-top:1.25rem;max-width:1500px}
+[data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-top:1.25rem}
 .login-brand {background:#103a72;
 border-radius:12px 12px 0 0;padding:22px 18px;color:white;text-align:center;margin:0 -18px 16px}
 .login-brand .login-title {font-size:1.15rem;font-weight:750;letter-spacing:.04em}

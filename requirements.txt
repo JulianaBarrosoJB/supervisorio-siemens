@@ -3,3 +3,5 @@ plotly>=5.22,<7
 pandas>=2.2,<3
 numpy>=1.26,<3
 psycopg[binary]>=3.2,<4
+requests>=2.31,<3
+Pillow>=10,<13

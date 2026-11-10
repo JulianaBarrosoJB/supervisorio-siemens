@@ -1,46 +1,86 @@
-"""Ponto de entrada do aplicativo Streamlit."""
+"""Supervisorio protegido: autenticação e permissões antes de consultar telemetria."""
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
 import streamlit as st
+
+from supervisorio.acesso import exigir_login, validar_sessao, sair, autorizado
+from supervisorio.administracao import exibir_administracao
 from supervisorio.dados import carregar_dados
 from supervisorio.interface import aplicar_estilo, filtros_laterais, mostrar_cabecalho
 from supervisorio.graficos import mostrar_motor
 
-st.set_page_config(page_title="Gráficos dos motores", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="Monitoramento de Motores - NG Betim/MG",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 aplicar_estilo()
+sessao = exigir_login()
+perfil = sessao["profile"]
+
+with st.sidebar:
+    st.caption(f"Acesso: {perfil['display_name'] or perfil['email']}")
+    st.caption(f"Perfil: {perfil['role_key'].capitalize()}")
+    paginas = ["Monitoramento"]
+    if autorizado(sessao, "users.manage"):
+        paginas.append("Administração")
+    pagina = st.radio("Área", paginas, label_visibility="collapsed")
+    if st.button("Sair da conta", width="stretch"):
+        sair()
+        st.rerun()
+
+if pagina == "Administração":
+    exibir_administracao()
+    st.stop()
+
+if not autorizado(sessao, "motors.view"):
+    st.error("Seu perfil não tem permissão para acessar o monitoramento.")
+    st.stop()
+
 escolhidos = filtros_laterais()
 mostrar_cabecalho()
 
+
 @st.fragment(run_every="1s")
 def exibir():
+    atual = validar_sessao()
+    if not atual:
+        st.rerun()
+    permissoes = atual["profile"]["permissions"]
+    if "motors.view" not in permissoes:
+        st.warning("Permissão de monitoramento removida.")
+        return
     if not escolhidos:
         st.info("Selecione pelo menos um motor na barra lateral.")
         return
     try:
-        df, fonte = carregar_dados()
-    except Exception as exc:
-        st.error(f"Falha ao consultar a fonte de dados: {type(exc).__name__}. Verifique a conexão e os Secrets.")
+        df, _ = carregar_dados(atual["access_token"])
+    except Exception:
+        st.error("Falha ao consultar a telemetria. Verifique a conexão e o acesso ao banco.")
         return
-    if fonte != "Demonstração":
+    if "telemetry.latest" in permissoes:
         if df is None or df.empty:
-            st.warning("Nenhuma leitura recebida do banco de dados.")
+            st.warning("Nenhuma leitura recebida do PostgreSQL.")
         else:
-            ultima = df["timestamp"].max()
-            instante = ultima.to_pydatetime() if hasattr(ultima, "to_pydatetime") else ultima
+            instante = df["timestamp"].max()
+            instante = instante.to_pydatetime() if hasattr(instante, "to_pydatetime") else instante
             if instante.tzinfo is None:
-                from zoneinfo import ZoneInfo
-                instante = instante.replace(tzinfo=ZoneInfo("America/Sao_Paulo"))
+                instante = instante.replace(tzinfo=timezone.utc)
             idade = max(0, (datetime.now(timezone.utc) - instante.astimezone(timezone.utc)).total_seconds())
-            horario = instante.astimezone(__import__("zoneinfo").ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y %H:%M:%S")
+            horario = instante.astimezone(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y %H:%M:%S")
             if idade > 10:
                 st.warning(f"Última leitura: {horario} (Brasília) • desatualizada há {idade:.0f} s")
             else:
                 st.caption(f"Última leitura: {horario} (Brasília) • atualizada há {idade:.0f} s")
-    else:
-        st.caption("Demonstração • dados simulados, sem comunicação com a fábrica.")
+    if "motors.metrics" not in permissoes and "motors.charts" not in permissoes:
+        st.info("Seu perfil não tem permissão para visualizar os indicadores e gráficos.")
+        return
     for inicio in range(0, len(escolhidos), 2):
         colunas = st.columns(2, gap="medium")
-        for coluna, motor in zip(colunas, escolhidos[inicio:inicio+2]):
+        for coluna, motor in zip(colunas, escolhidos[inicio:inicio + 2]):
             with coluna:
-                mostrar_motor(motor, df)
+                mostrar_motor(motor, df, permissoes)
+
 
 exibir()
